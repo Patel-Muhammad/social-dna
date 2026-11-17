@@ -89,6 +89,62 @@ path). Open it in any modern browser: **arrow keys / space** to move, **drag or 
 slide overview, **F** fullscreen. All numbers are filled in from the real database and evaluation results by
 `python scripts/build_presentation.py` (re-run it after a new analysis or evaluation).
 
+## Research paper (IEEE format)
+
+Files in `docs/paper/`: `social_dna_paper.tex` (LaTeX source, IEEEtran two-column), `social_dna_paper.pdf` (compiled), `figures/` (4 figures).
+
+### What you must change before using or submitting it
+
+The paper contains **no personal name**; the author details are placeholders. Open `docs/paper/social_dna_paper.tex` and edit exactly these places:
+
+| Line | Placeholder | Replace with |
+|---|---|---|
+| 22 | `[Author Name]` | your name |
+| 23 | `[Department, University]` | your department and university |
+| 24 | `[City, Country]` | your city and country |
+| 25 | `[email address]` | your email |
+| 256 | `[repository URL]` | your GitHub link, e.g. `\url{https://github.com/YOUR_USERNAME/social-dna}` |
+
+Lines 22-25 look like this in the file (keep the `{[}` and `{]}` pairs when you leave a placeholder; delete them when you type real text):
+
+```latex
+\author{\IEEEauthorblockN{{[}Author Name{]}}
+\IEEEauthorblockA{\textit{{[}Department, University{]}} \\
+{[}City, Country{]} \\
+{[}email address{]}}}
+```
+
+Also: (1) check every reference at the end of the file against its original source (they were written from memory); (2) check your venue's page limit and template.
+If you plan to re-run `scripts\build_paper.py` (see below), make the same edits in `scripts\paper_template.tex` (lines 22-25 and 248), because that script overwrites the `.tex`.
+
+### Render the PDF (Windows)
+
+Pick one option and run it from the `docs\paper` folder:
+
+```bat
+:: Option A - tectonic (one small download, fetches LaTeX packages automatically)
+::   download from https://github.com/tectonic-typesetting/tectonic/releases , unzip, add tectonic.exe to PATH
+cd docs\paper
+tectonic social_dna_paper.tex
+
+:: Option B - MiKTeX (https://miktex.org/download), run twice so references resolve
+cd docs\paper
+pdflatex social_dna_paper.tex
+pdflatex social_dna_paper.tex
+```
+
+Option C (no install): upload the whole `docs\paper` folder to https://www.overleaf.com (New Project > Upload Project), set `social_dna_paper.tex` as the main file and click Recompile.
+The output is `docs\paper\social_dna_paper.pdf`.
+
+### Regenerate figures and numbers from the data (optional)
+
+```bat
+pip install -r requirements-dev.txt
+python scripts\build_paper.py
+```
+
+This rebuilds the figures from the database, fills every number into the paper, overwrites `social_dna_paper.tex` from `scripts\paper_template.tex`, and compiles the PDF if `tectonic` is on your PATH.
+
 ## Technology stack
 
 Python 3.10–3.12 · Streamlit · SQLite · NetworkX · python-louvain · Pandas / NumPy / SciPy / scikit-learn · Plotly · PyVis · Google Gemini (`google-genai`) · Pytest
