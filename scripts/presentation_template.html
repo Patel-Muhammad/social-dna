@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Social DNA Presentation</title>
+<meta name="description" content="Social DNA: AI-based community discovery in the LastFM Asia social network.">
+<style>
+:root{
+  --bg:#F4F6F9; --ink:#0F172A; --mute:#475569; --faint:#64748B;
+  --indigo:#2563EB; --indigo-d:#1E3A8A; --teal:#0F766E; --amber:#B45309; --rose:#BE123C;
+  --glass:#FFFFFF; --glass-b:#E2E8F0; --line:#E2E8F0;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI Variable Display","Segoe UI",Inter,Roboto,system-ui,sans-serif;
+  --mono:"SF Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow:hidden;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.deck{position:fixed;inset:0;overflow:hidden;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab}
+.deck.drag{cursor:grabbing}
+.track{display:flex;height:100%;will-change:transform}
+.slide{flex:0 0 100vw;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
+.glow{display:none}
+
+/* ---------- 16:9 stage; every size below is in cqw so it scales like a keynote ---------- */
+.stage{width:min(100vw,177.78vh);height:min(56.25vw,100vh);container-type:size;position:relative;z-index:1;padding:5.2cqw 6cqw 6.5cqw}
+.eyebrow{font-size:1.15cqw;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+h1{font-size:8.6cqw;line-height:.98;letter-spacing:-.045em;font-weight:700}
+h2{font-size:3.9cqw;line-height:1.04;letter-spacing:-.035em;font-weight:700;margin-top:.7cqw;max-width:84cqw}
+h3{font-size:1.75cqw;letter-spacing:-.015em;font-weight:600}
+p,li{font-size:1.65cqw;line-height:1.45;color:var(--mute);letter-spacing:0}
+.lead{font-size:2.1cqw;line-height:1.35;letter-spacing:-.012em;color:var(--mute)}
+b,strong{color:var(--ink);font-weight:600}
+.grad{color:var(--indigo)}
+.mono{font-family:var(--mono)}
+.glass{background:var(--glass);border:1px solid var(--glass-b);border-radius:1.6cqw;
+    box-shadow:0 1px 2px rgba(15,23,42,.05),0 1.2cqw 3cqw rgba(15,23,42,.07)}
+.pad{padding:1.8cqw 2cqw}
+.row{display:flex;gap:1.6cqw}.col{display:flex;flex-direction:column;gap:1.2cqw}
+.grow{flex:1}.center{align-items:center}.between{justify-content:space-between}
+.stat .n{font-size:5.2cqw;font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.stat .l{font-size:1.15cqw;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:.9cqw}
+.stat .h{font-size:1.3cqw;color:var(--mute);margin-top:.35cqw}
+.chip{display:inline-flex;align-items:center;gap:.6cqw;padding:.55cqw 1.3cqw;border-radius:99cqw;font-size:1.35cqw;font-weight:500;color:var(--ink);
+  background:var(--glass);border:1px solid var(--glass-b)}
+.dot{width:.8cqw;height:.8cqw;border-radius:50%;background:var(--teal);display:inline-block}
+.check{width:1.9cqw;height:1.9cqw;border-radius:50%;background:rgba(15,118,110,.12);color:var(--teal);display:grid;place-items:center;font-size:1.15cqw;font-weight:700;flex:none}
+.warn{background:rgba(180,83,9,.12);color:var(--amber)}
+ul.clean{list-style:none;display:flex;flex-direction:column;gap:1.1cqw}
+ul.clean li{display:flex;gap:1.1cqw;align-items:flex-start}
+.note{font-size:1.2cqw;color:var(--faint);line-height:1.4}
+
+/* ---------- reveal choreography ---------- */
+.rv{opacity:0;transform:translateY(2.2cqw) scale(.985);filter:blur(6px);
+  transition:opacity .8s var(--ease) calc(var(--d,0)*70ms),transform .9s var(--ease) calc(var(--d,0)*70ms),filter .8s var(--ease) calc(var(--d,0)*70ms)}
+.slide.on .rv{opacity:1;transform:none;filter:none}
+.rvx{opacity:0;transform:translateX(-3cqw);transition:opacity .8s var(--ease) calc(var(--d,0)*90ms),transform .9s var(--ease) calc(var(--d,0)*90ms)}
+.slide.on .rvx{opacity:1;transform:none}
+
+/* ---------- slide 1 ---------- */
+#s1 canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+#s1 .stage{display:flex;flex-direction:column;justify-content:center;gap:2.4cqw}
+#s1 .sub{font-size:2.4cqw;letter-spacing:-.02em;color:var(--mute);max-width:78cqw;line-height:1.25}
+.hint{position:absolute;bottom:3.4cqw;left:6cqw;font-size:1.2cqw;color:var(--faint);display:flex;gap:.8cqw;align-items:center}
+kbd{font-family:var(--font);font-size:1cqw;padding:.25cqw .7cqw;border-radius:.6cqw;background:var(--glass);border:1px solid var(--glass-b);color:var(--mute)}
+
+/* ---------- slide 2 pipeline ---------- */
+.pipe{display:flex;gap:1.4cqw;margin-top:4.2cqw;position:relative}
+.pipe .st{flex:1;padding:1.7cqw;position:relative}
+.pipe .num{width:3cqw;height:3cqw;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:1.4cqw;background:var(--indigo-d);color:#fff;margin-bottom:1.4cqw}
+.pipe .st:last-child .num{background:var(--teal)}
+.pipe h3{margin-bottom:.5cqw}.pipe p{font-size:1.3cqw}
+.pipe .st::after{content:"";position:absolute;right:-1.45cqw;top:3.1cqw;width:1.5cqw;height:2px;background:var(--glass-b)}
+.pipe .st:last-child::after{display:none}
+.rule{margin-top:3cqw;display:flex;gap:1.4cqw}
+.rule .glass{flex:1}
+
+/* ---------- slide 3 dataset ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1.4cqw;margin-top:3cqw}
+.stats .glass{padding:2cqw 2cqw 1.7cqw}
+.split{display:grid;grid-template-columns:1.15fr 1fr;gap:1.6cqw;margin-top:1.6cqw}
+
+/* ---------- slide 4 architecture ---------- */
+.layers{display:flex;flex-direction:column;gap:.9cqw;margin-top:2.6cqw}
+.layer{display:flex;align-items:center;gap:2cqw;padding:1.25cqw 2cqw;border-radius:1.3cqw;border:1px solid var(--glass-b);position:relative;overflow:hidden}
+.layer::before{content:"";position:absolute;left:0;top:0;bottom:0;width:.5cqw;background:var(--c)}
+.layer .t{width:19cqw;font-weight:600;font-size:1.7cqw;letter-spacing:-.01em}
+.layer .d{font-size:1.38cqw;color:var(--mute)}
+.layer{background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+
+/* ---------- slide 5 louvain ---------- */
+.louv{display:grid;grid-template-columns:1fr 1fr;gap:2.4cqw;margin-top:2.4cqw;align-items:stretch}
+.louv svg{width:100%;height:100%}
+.steps{counter-reset:s}.steps li{counter-increment:s;display:flex;gap:1.2cqw;padding:1cqw 0;border-bottom:1px solid var(--line);color:var(--faint);transition:color .5s,transform .6s var(--ease)}
+.steps li::before{content:counter(s);width:2.4cqw;height:2.4cqw;border-radius:50%;border:1px solid var(--glass-b);display:grid;place-items:center;font-size:1.2cqw;flex:none;transition:all .5s}
+.steps li.act{color:var(--ink);transform:translateX(.6cqw)}.steps li.act::before{background:var(--indigo-d);border-color:transparent;color:#fff}
+.cmp{display:grid;grid-template-columns:auto repeat(2,1fr);gap:.5cqw 2cqw;font-size:1.5cqw;margin-top:1.4cqw;align-items:baseline}
+.cmp .h{color:var(--faint);font-size:1.1cqw;letter-spacing:.1em;text-transform:uppercase}.cmp .v{font-weight:700;font-size:2.4cqw;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+
+/* ---------- slide 6 bars ---------- */
+.bars{display:flex;align-items:flex-end;gap:.45cqw;height:23cqw;padding:0 0 0 0;margin-top:2.4cqw}
+.bar{flex:1;border-radius:.5cqw .5cqw .15cqw .15cqw;background:var(--c);transform-origin:bottom;transform:scaleY(0);transition:transform 1.1s var(--ease) calc(var(--i)*28ms),filter .3s;position:relative;min-height:2px}
+.slide.on .bar{transform:scaleY(1)}
+.bar:hover{filter:brightness(1.35)}
+.bar .tip{color:#fff;position:absolute;bottom:calc(100% + .6cqw);left:50%;transform:translateX(-50%);white-space:nowrap;font-size:1.1cqw;padding:.4cqw .8cqw;border-radius:.6cqw;background:#0F172A;border:1px solid #0F172A;opacity:0;pointer-events:none;transition:opacity .2s;z-index:3}
+.bar:hover .tip{opacity:1}
+.axis{display:flex;gap:.45cqw;margin-top:.7cqw}.axis span{flex:1;text-align:center;font-size:.85cqw;color:var(--faint)}
+.side{display:flex;flex-direction:column;gap:1.3cqw;width:20cqw}.side .glass{padding:1.5cqw 1.8cqw}
+
+/* ---------- slide 7 interests ---------- */
+.feat{display:grid;grid-template-columns:11cqw 1fr 6cqw;gap:1.4cqw;align-items:center;padding:1cqw 0;border-bottom:1px solid var(--line)}
+.feat .nm{font-family:var(--mono);font-size:1.3cqw;color:var(--ink)}
+.track2{height:1cqw;border-radius:9cqw;background:#E2E8F0;position:relative;overflow:hidden}
+.track2 i{position:absolute;left:0;top:0;bottom:0;border-radius:9cqw;width:0;transition:width 1.2s var(--ease) calc(var(--d)*110ms)}
+.track2 .net{background:#CBD5E1}.track2 .com{background:var(--indigo)}
+.slide.on .track2 i{width:var(--w)}
+.feat .lf{text-align:right;font-weight:700;font-size:1.6cqw;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:2cqw;font-size:1.2cqw;color:var(--mute);margin-bottom:.4cqw}.legend i{display:inline-block;width:1.4cqw;height:.6cqw;border-radius:9cqw;margin-right:.6cqw;vertical-align:middle}
+
+/* ---------- slide 8 heatmap ---------- */
+.heat{display:grid;gap:2px;aspect-ratio:1;width:34cqw;flex:none}
+.heat i{border-radius:2px;background:var(--c);opacity:0;transform:scale(.4);transition:opacity .6s var(--ease) calc(var(--d)*14ms),transform .7s var(--ease) calc(var(--d)*14ms)}
+.slide.on .heat i{opacity:1;transform:none}
+.heat i:hover{outline:2px solid var(--ink);outline-offset:-1px;z-index:2}
+.readout{min-height:9cqw}.readout .big{font-size:4.6cqw;font-weight:700;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+
+/* ---------- slide 9 hub vs bridge ---------- */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:2cqw;margin-top:2.8cqw}
+.two .glass{padding:2.2cqw 2.4cqw}
+.who{font-size:3.2cqw;font-weight:700;letter-spacing:-.03em;margin:.6cqw 0 1.2cqw}
+.kv{display:flex;justify-content:space-between;padding:.8cqw 0;border-bottom:1px solid var(--line);font-size:1.5cqw;color:var(--mute)}.kv b{font-variant-numeric:tabular-nums}
+.reach{display:flex;flex-wrap:wrap;gap:.45cqw;margin-top:1.4cqw}.reach i{width:1.5cqw;height:1.5cqw;border-radius:50%;background:var(--c);transform:scale(0);transition:transform .6s var(--ease) calc(var(--i)*60ms)}
+.slide.on .reach i{transform:none}
+
+/* ---------- slide 10 gemini ---------- */
+.flow{display:flex;gap:1cqw;margin-top:3cqw;align-items:stretch}
+.flow .glass{flex:1;padding:1.5cqw}.flow .arr{align-self:center;color:var(--indigo);font-size:2cqw}
+.flow h3{font-size:1.5cqw}.flow p{font-size:1.2cqw;margin-top:.5cqw}
+.flow .calc{border-color:rgba(15,118,110,.45);background:rgba(15,118,110,.06)}
+.quote{margin-top:2cqw;padding:1.6cqw 2cqw;border-left:.3cqw solid var(--indigo)}
+.quote .q{color:var(--ink);font-size:1.6cqw}.quote .a{font-size:1.4cqw;margin-top:.5cqw}
+
+/* ---------- slide 11 evaluation ---------- */
+.cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2cqw;margin-top:2.2cqw}.cards4 .glass{padding:1.5cqw 1.8cqw}.cards4 .n{font-size:3.4cqw}
+.erow{display:grid;grid-template-columns:19cqw 1fr 1fr;gap:1.6cqw;align-items:center;padding:.85cqw 0;border-bottom:1px solid var(--line)}
+.erow .m{font-size:1.4cqw;color:var(--ink)}.erow .m small{display:block;color:var(--faint);font-size:1cqw}
+.pbar{height:1.1cqw;border-radius:9cqw;background:#E2E8F0;position:relative}
+.pbar i{position:absolute;inset:0 auto 0 0;border-radius:9cqw;width:0;background:var(--indigo);transition:width 1.3s var(--ease) calc(var(--d)*100ms)}
+.slide.on .pbar i{width:var(--w)}
+.pbar .tg{position:absolute;top:-.35cqw;bottom:-.35cqw;width:2px;background:var(--amber)}
+.pv{display:flex;justify-content:space-between;font-size:1.15cqw;color:var(--mute);margin-top:.4cqw;font-variant-numeric:tabular-nums}
+.ehead{display:grid;grid-template-columns:19cqw 1fr 1fr;gap:1.6cqw;font-size:1.1cqw;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:2cqw;padding-bottom:.6cqw;border-bottom:1px solid var(--line)}
+.na{font-size:1.25cqw;color:var(--amber)}
+
+/* ---------- slide 12 demo ---------- */
+.demo{display:grid;grid-template-columns:1.7fr 1fr;gap:2.2cqw;margin-top:1.6cqw;align-items:start}
+.win{border-radius:1.2cqw;overflow:hidden;border:1px solid var(--glass-b);background:#fff;box-shadow:0 2cqw 5cqw rgba(15,23,42,.16);transform:perspective(120cqw) rotateY(-3deg);transition:transform .8s var(--ease)}
+.win:hover{transform:perspective(120cqw) rotateY(0)}
+.win .bar2{height:2.2cqw;display:flex;gap:.5cqw;align-items:center;padding:0 1cqw;background:#F1F5F9}
+.win .bar2 i{width:.75cqw;height:.75cqw;border-radius:50%;background:#CBD5E1}.win .bar2 i:nth-child(1){background:#ff5f57}.win .bar2 i:nth-child(2){background:#febc2e}.win .bar2 i:nth-child(3){background:#28c840}
+.shots{position:relative;aspect-ratio:16/10}.shots img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;opacity:0;transition:opacity .6s var(--ease);pointer-events:none}.shots img.on{opacity:1}
+.tabs{display:flex;gap:.7cqw;margin-top:1.2cqw;flex-wrap:wrap}
+.tab{padding:.55cqw 1.3cqw;border-radius:99cqw;font-size:1.2cqw;color:var(--mute);border:1px solid var(--glass-b);background:var(--glass);transition:all .3s}.tab:hover{color:var(--ink)}.tab.on{background:var(--ink);color:#fff;border-color:transparent}
+.script li{font-size:1.4cqw}.script li b{color:var(--teal);font-weight:600;margin-right:.3cqw}
+
+/* ---------- slide 13/14 ---------- */
+.lim{display:grid;grid-template-columns:1fr 1fr;gap:2cqw;margin-top:2.6cqw}.lim .glass{padding:2.2cqw 2.4cqw}.lim li{font-size:1.5cqw}
+#s14 .stage{display:flex;flex-direction:column;justify-content:center;gap:2.2cqw}
+
+/* ---------- chrome ---------- */
+.progress{position:fixed;top:0;left:0;height:3px;background:var(--indigo);z-index:30;width:0;transform-origin:left}
+.chrome{position:fixed;left:50%;bottom:max(1.6vh,12px);transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:99px;
+  background:rgba(255,255,255,.82);border:1px solid var(--glass-b);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);
+  box-shadow:0 8px 30px rgba(15,23,42,.14);transition:opacity .5s,transform .6s var(--ease)}
+.chrome.idle{opacity:0;transform:translateX(-50%) translateY(14px)}
+.cb{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--ink);transition:background .15s,transform .1s}
+.cb:hover{background:rgba(15,23,42,.06)}.cb:active{transform:scale(.92);background:rgba(15,23,42,.12)}.cb[disabled]{opacity:.3;pointer-events:none}
+.cb svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dots{display:flex;gap:6px;padding:0 8px}.dots i{width:6px;height:6px;border-radius:99px;background:rgba(15,23,42,.2);transition:all .45s var(--ease);cursor:pointer}.dots i.on{width:22px;background:var(--indigo)}
+.count{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;padding:0 8px 0 2px;min-width:44px;text-align:center}
+.sheet{position:fixed;inset:auto 0 0 0;z-index:40;max-height:46vh;padding:22px max(24px,8vw) 84px;background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);box-shadow:0 -10px 40px rgba(15,23,42,.12);
+  border-top:1px solid var(--glass-b);border-radius:22px 22px 0 0;transform:translateY(105%);transition:transform .6s var(--ease);overflow:auto}
+.sheet.open{transform:none}.sheet h4{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);margin-bottom:8px}
+.sheet p{font-size:clamp(15px,1.5vw,20px);color:var(--ink);line-height:1.5;max-width:900px}
+.menu{position:fixed;inset:0;z-index:50;background:rgba(244,246,249,.78);-webkit-backdrop-filter:blur(30px);backdrop-filter:blur(30px);display:grid;place-items:center;opacity:0;pointer-events:none;transition:opacity .4s}
+.menu.open{opacity:1;pointer-events:auto}.menu .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;width:min(1000px,90vw);max-height:80vh;overflow:auto;padding:4px}
+.menu button{text-align:left;padding:16px 18px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-b);transform:scale(.94);opacity:0;transition:transform .5s var(--ease) calc(var(--i)*25ms),opacity .5s calc(var(--i)*25ms),background .2s}
+.menu.open button{transform:none;opacity:1}.menu button:hover{background:#fff;box-shadow:0 4px 14px rgba(15,23,42,.1)}.menu small{color:var(--faint);font-size:12px;display:block;margin-bottom:4px}.menu span{font-weight:600;font-size:16px;letter-spacing:-.01em}
+
+/* ---------- accessibility ---------- */
+@media (prefers-reduced-motion:reduce){
+  .rv,.rvx{transition:opacity .3s;transform:none;filter:none}.bar,.reach i,.heat i{transition:opacity .3s;transform:none}.bar{opacity:0}.slide.on .bar{opacity:1}
+  .win{transform:none}.glow{transition:none}
+}
+@media (prefers-reduced-transparency:reduce){.glass,.chrome,.sheet,.menu{-webkit-backdrop-filter:none;backdrop-filter:none;background:#fff}}
+@media (prefers-contrast:more){.glass{border-color:#0F172A}p,li,.lead{color:#1e293b}}
+@media print{.chrome,.progress,.sheet,.menu{display:none}html,body{overflow:visible;height:auto}.deck{position:static}.track{display:block;transform:none!important}.slide{height:100vh;page-break-after:always}.rv,.rvx,.bar,.reach i,.heat i{opacity:1!important;transform:none!important;filter:none!important}}
+</style>
+</head>
+<body>
+<div class="glow" id="glow"></div>
+<div class="progress" id="progress"></div>
+
+<main class="deck" id="deck" aria-live="polite">
+<div class="track" id="track">
+
+<!-- 1 TITLE -->
+<section class="slide" id="s1" data-title="Social DNA" data-notes="Introduce the project in one sentence: we take a real friendship network, discover its natural groups automatically, work out what each group has in common, and let an LLM explain the verified results. Everything you will see is calculated from the real dataset.">
+  <canvas id="net"></canvas>
+  <div class="stage">
+    <div class="eyebrow rv" style="--d:0">University project &middot; Social network intelligence</div>
+    <h1 class="rv" style="--d:1">Social <span class="grad">DNA</span></h1>
+    <p class="sub rv" style="--d:2">AI-based community discovery in the LastFM Asia social network.</p>
+    <div class="row rv" style="--d:3"><span class="chip"><span class="dot"></span>{{users}} users</span><span class="chip"><span class="dot" style="background:var(--indigo)"></span>{{edges}} friendships</span><span class="chip"><span class="dot" style="background:var(--amber)"></span>{{ncomm}} communities</span></div>
+    <div class="hint rv" style="--d:5"><kbd>&rarr;</kbd> next &nbsp; <kbd>S</kbd> notes &nbsp; <kbd>O</kbd> overview &nbsp; <kbd>F</kbd> fullscreen &nbsp; or drag</div>
+  </div>
+</section>
+
+<!-- 2 PIPELINE -->
+<section class="slide" id="s2" data-title="Approach" data-notes="Walk the pipeline left to right. Stress that the language model is the LAST step and only explains numbers that were already computed. The rule on screen is the backbone of the project: no mock data, no invented artist names.">
+  <div class="stage">
+    <div class="eyebrow rv">Problem &amp; approach</div>
+    <h2 class="rv" style="--d:1">From a tangle of friendships to <span class="grad">understandable communities</span></h2>
+    <div class="pipe">
+      <div class="st glass rv" style="--d:3"><div class="num">1</div><h3>Dataset</h3><p>LastFM Asia: friendships and liked artists.</p></div>
+      <div class="st glass rv" style="--d:4"><div class="num">2</div><h3>Graph</h3><p>NetworkX. Users are nodes, friendships are edges.</p></div>
+      <div class="st glass rv" style="--d:5"><div class="num">3</div><h3>Communities</h3><p>Louvain finds groups with no labels.</p></div>
+      <div class="st glass rv" style="--d:6"><div class="num">4</div><h3>Interests</h3><p>Common and distinctive artist features.</p></div>
+      <div class="st glass rv" style="--d:7"><div class="num">5</div><h3>Gemini</h3><p>Explains the verified results in words.</p></div>
+    </div>
+    <div class="rule">
+      <div class="glass pad rv" style="--d:8"><h3>The question</h3><p style="margin-top:.5cqw">Which groups exist, what do their members share, and who connects the groups?</p></div>
+      <div class="glass pad rv" style="--d:9"><h3>The rule</h3><p style="margin-top:.5cqw">Every number is calculated from the dataset. No mock data. No invented names.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 DATASET -->
+<section class="slide" id="s3" data-title="Dataset" data-notes="Source is Stanford SNAP (FEATHER project). Validation was run for real: no duplicate edges, no self-loops, one connected component, 173 users with no liked artists. Features are anonymous artist IDs, so we never claim artist names. Country codes exist but are not treated as community ground truth.">
+  <div class="stage">
+    <div class="eyebrow rv">Dataset</div>
+    <h2 class="rv" style="--d:1">LastFM Asia <span class="grad">Social Network</span></h2>
+    <div class="stats">
+      <div class="glass stat rv" style="--d:2"><div class="n" data-count="{{users_raw}}">0</div><div class="l">Users</div><div class="h">anonymised IDs</div></div>
+      <div class="glass stat rv" style="--d:3"><div class="n" data-count="{{edges_raw}}">0</div><div class="l">Friendships</div><div class="h">mutual follows</div></div>
+      <div class="glass stat rv" style="--d:4"><div class="n" data-count="{{features_raw}}">0</div><div class="l">Artist features</div><div class="h">avg {{avg_features}} per user</div></div>
+      <div class="glass stat rv" style="--d:5"><div class="n" data-count="{{components_raw}}">0</div><div class="l">Components</div><div class="h">one connected network</div></div>
+    </div>
+    <div class="split">
+      <div class="glass pad rv" style="--d:6"><h3 style="margin-bottom:1.1cqw">Validation (actually executed)</h3>
+        <ul class="clean">
+          <li><span class="check">&#10003;</span><p>Duplicate edges: <b>{{dups}}</b> &middot; self-loops: <b>{{loops}}</b> &middot; isolated users: <b>{{isolated}}</b></p></li>
+          <li><span class="check">&#10003;</span><p>Counts match the documented SNAP numbers: <b>{{matches}}</b></p></li>
+          <li><span class="check warn">!</span><p><b>{{nofeat}}</b> users have no liked-artist features (kept, never filled in)</p></li>
+        </ul></div>
+      <div class="glass pad rv" style="--d:7"><h3 style="margin-bottom:1.1cqw">What the data is, and is not</h3>
+        <ul class="clean">
+          <li><span class="check">&#10003;</span><p>Collected March 2020 from the LastFM public API</p></li>
+          <li><span class="check warn">!</span><p>Artists are <b>anonymous feature IDs</b>, there are no names</p></li>
+          <li><span class="check warn">!</span><p>Country is <b>not</b> used as community ground truth</p></li>
+        </ul></div>
+    </div>
+    <p class="note rv" style="--d:8;margin-top:1.2cqw">Rozemberczki &amp; Sarkar, <i>Characteristic Functions on Graphs</i>, CIKM 2020 &middot; snap.stanford.edu/data/feather-lastfm-social.html</p>
+  </div>
+</section>
+
+<!-- 4 ARCHITECTURE -->
+<section class="slide" id="s4" data-title="Architecture" data-notes="Walk the stack from top to bottom. Design choices: SQL lives only in the database layer, analysis functions have no UI code, and the LLM layer only ever sees verified JSON produced by the query service. A new machine needs only pip install and one command to run.">
+  <div class="stage">
+    <div class="eyebrow rv">System design</div>
+    <h2 class="rv" style="--d:1">Simple, modular, <span class="grad">reproducible</span></h2>
+    <div class="layers">
+      <div class="layer rvx" style="--d:2;--c:#2563EB"><div class="t">Streamlit dashboard</div><div class="d">7 pages &middot; Plotly &middot; PyVis interactive graph</div></div>
+      <div class="layer rvx" style="--d:3;--c:#0F766E"><div class="t">LLM layer</div><div class="d">Gemini function-calling router &middot; verified-context prompts &middot; safe fallbacks</div></div>
+      <div class="layer rvx" style="--d:4;--c:#2563EB"><div class="t">Query service</div><div class="d">get_network_overview &middot; get_community_details &middot; compare_communities &middot; get_bridge_users &hellip;</div></div>
+      <div class="layer rvx" style="--d:5;--c:#0F766E"><div class="t">Analysis</div><div class="d">Louvain &middot; Greedy &middot; NetworkX metrics &middot; sparse TF-IDF cosine &amp; Jaccard</div></div>
+      <div class="layer rvx" style="--d:6;--c:#2563EB"><div class="t">Storage</div><div class="d">SQLite with versioned schema &middot; processed files cached on disk</div></div>
+      <div class="layer rvx" style="--d:7;--c:#0F766E"><div class="t">Data</div><div class="d">Automatic download &rarr; validation &rarr; cleaning</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 LOUVAIN -->
+<section class="slide" id="s5" data-title="Louvain" data-notes="Modularity compares the fraction of friendships inside groups with what we would expect if friendships were random with the same degrees. Louvain greedily moves users to raise modularity, merges groups and repeats. It is heuristic, so the random seed controls the visiting order and makes a run reproducible. Greedy Modularity is our second algorithm. Higher modularity does not prove higher accuracy because both optimise the same objective and there is no ground truth.">
+  <div class="stage">
+    <div class="eyebrow rv">Method</div>
+    <h2 class="rv" style="--d:1">Louvain: communities by <span class="grad">maximising modularity</span></h2>
+    <div class="louv">
+      <div class="glass rv" style="--d:2;padding:1cqw"><svg id="lsvg" viewBox="0 0 400 300" aria-label="Animated illustration of Louvain merging nodes into communities"></svg></div>
+      <div class="col">
+        <ol class="steps clean rv" style="--d:3;list-style:none" id="steps">
+          <li>Every user starts alone in their own community</li>
+          <li>Move each user to the neighbour community that raises modularity most</li>
+          <li>Merge each community into a super-node and repeat</li>
+          <li>Stop when modularity cannot improve any further</li>
+        </ol>
+        <div class="glass pad rv" style="--d:4"><div class="cmp"><span></span><span class="h">Louvain</span><span class="h">Greedy</span>
+          <span class="h">Communities</span><span class="v">{{ncomm}}</span><span class="v">{{g_comm}}</span>
+          <span class="h">Modularity</span><span class="v">{{modularity}}</span><span class="v">{{g_mod}}</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 COMMUNITIES -->
+<section class="slide" id="s6" data-title="Communities" data-notes="Point out the long tail: a handful of large communities hold most users and many tiny ones exist. Only a small share of friendships cross community borders, which is what high modularity means in practice. Colours match the dashboard. Hover a bar for exact sizes.">
+  <div class="stage">
+    <div class="eyebrow rv">Results</div>
+    <h2 class="rv" style="--d:1">{{ncomm}} communities, <span class="grad">very different sizes</span></h2>
+    <div class="row" style="margin-top:.4cqw">
+      <div class="grow">
+        <div class="bars" id="bars"></div><div class="axis" id="axis"></div>
+      </div>
+      <div class="side">
+        <div class="glass stat rv" style="--d:3"><div class="n">{{largest}}</div><div class="l">Largest community</div><div class="h">community {{largest_id}}</div></div>
+        <div class="glass stat rv" style="--d:4"><div class="n">{{top3}}</div><div class="l">Held by top 3</div><div class="h">of all users</div></div>
+        <div class="glass stat rv" style="--d:5"><div class="n">{{cross}}</div><div class="l">Cross-border links</div><div class="h">friendships between communities</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 INTERESTS -->
+<section class="slide" id="s7" data-title="Interests" data-notes="Common features are liked by the most members, but may be popular everywhere. Distinctive features are over-represented compared with the whole network, measured by lift. Be explicit that artists are anonymous feature IDs, so we describe them as shared preference features and never guess names or genres. Within-community cosine is only about 0.12, so friends share some taste, not all.">
+  <div class="stage">
+    <div class="eyebrow rv">Common-interest analysis</div>
+    <h2 class="rv" style="--d:1">What makes community 1 <span class="grad">distinctive</span></h2>
+    <p class="rv" style="--d:2;margin-top:1cqw">Measured shares of its {{c1_members}} members liking each artist feature, compared with the whole network.</p>
+    <div class="split" style="grid-template-columns:1.6fr 1fr;margin-top:1.4cqw">
+      <div class="glass pad rv" style="--d:3">
+        <div class="legend"><span><i style="background:#2563EB"></i>Community 1</span><span><i style="background:#CBD5E1"></i>Whole network</span></div>
+        <div id="feats"></div>
+      </div>
+      <div class="col">
+        <div class="glass pad rv" style="--d:4"><h3>How it is measured</h3>
+          <ul class="clean" style="margin-top:1cqw"><li><p><b>prevalence</b> = members liking it &divide; members</p></li><li><p><b>lift</b> = prevalence &divide; network prevalence</p></li><li><p><b>distinctive</b> = prevalence &times; log&#8322;(lift)</p></li></ul></div>
+        <div class="glass pad rv" style="--d:5"><h3>Measured, not inferred</h3><p style="margin-top:.6cqw">Features are anonymous IDs. We never invent artist names or genres.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 SIMILARITY -->
+<section class="slide" id="s8" data-title="Similarity" data-notes="Each cell is the cosine similarity between two community interest profiles, built with TF-IDF so rare artists weigh more. Hover to read any pair. The bright diagonal is a community with itself. Jaccard is also computed on each community's top 30 features.">
+  <div class="stage">
+    <div class="eyebrow rv">Similarity</div>
+    <h2 class="rv" style="--d:1">Which communities <span class="grad">like alike?</span></h2>
+    <div class="row" style="margin-top:2.2cqw;gap:3.2cqw">
+      <div class="heat rv" id="heat" style="--d:2"></div>
+      <div class="col grow">
+        <div class="glass pad readout rv" style="--d:3"><div class="eyebrow" id="ro-l">Hover the grid</div><div class="big grad" id="ro-v">&ndash;</div><p id="ro-t" style="margin-top:.4cqw">Cosine similarity between two community interest profiles (0 to 1).</p></div>
+        <div class="glass pad rv" style="--d:4"><h3>Most similar pair</h3><p style="margin-top:.5cqw">Communities <b>{{sim_a}}</b> and <b>{{sim_b}}</b>: cosine <b>{{sim_cos}}</b>, Jaccard <b>{{sim_jac}}</b>, <b>{{sim_cross}}</b> friendships between them.</p></div>
+        <div class="glass pad rv" style="--d:5"><h3>Inside a community</h3><p style="margin-top:.5cqw">Average member-to-member cosine is only <b>{{within}}</b>. Friends share some taste, not all of it.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 INFLUENCE -->
+<section class="slide" id="s9" data-title="Influence" data-notes="A hub has many friends, often inside one community. A bridge has friends spread over several communities and sits on shortest paths between groups. Betweenness is a sampled approximation (1000 sources) and is labelled as such in the dashboard. User IDs are anonymised dataset identifiers, not identities.">
+  <div class="stage">
+    <div class="eyebrow rv">Influence analysis</div>
+    <h2 class="rv" style="--d:1">A hub is not <span class="grad">a bridge</span></h2>
+    <div class="two">
+      <div class="glass rv" style="--d:2"><div class="eyebrow" style="color:var(--indigo)">Hub &middot; most connected user</div><div class="who">User {{hub_id}}</div>
+        <div class="kv"><span>Friends</span><b>{{hub_deg}}</b></div><div class="kv"><span>Outside own community</span><b>{{hub_ext}}</b></div><div class="kv"><span>Communities reached</span><b>{{hub_nc}}</b></div><div class="kv"><span>Participation coefficient</span><b>{{hub_pc}}</b></div>
+        <div class="reach" id="reach-hub"></div></div>
+      <div class="glass rv" style="--d:3"><div class="eyebrow">Bridge &middot; top betweenness across communities</div><div class="who">User {{br_id}}</div>
+        <div class="kv"><span>Friends</span><b>{{br_deg}}</b></div><div class="kv"><span>Outside own community</span><b>{{br_ext}}</b></div><div class="kv"><span>Communities reached</span><b>{{br_nc}}</b></div><div class="kv"><span>Participation coefficient</span><b>{{br_pc}}</b></div>
+        <div class="reach" id="reach-br"></div></div>
+    </div>
+    <p class="note rv" style="--d:5;margin-top:1.6cqw">Each dot is a community the user has friends in. Rankings by degree, betweenness, closeness and PageRank are in the dashboard. IDs are anonymised.</p>
+  </div>
+</section>
+
+<!-- 10 GEMINI -->
+<section class="slide" id="s10" data-title="Gemini" data-notes="Show the guardrails. Gemini picks which backend function answers the question; the backend validates the parameters and runs the real calculation; Gemini only explains the verified JSON. Unsupported questions are refused, and if Gemini is down or no key is set, the dashboard and verified plain-text answers keep working.">
+  <div class="stage">
+    <div class="eyebrow rv">LLM integration</div>
+    <h2 class="rv" style="--d:1">Gemini explains. <span class="grad">The backend calculates.</span></h2>
+    <div class="flow">
+      <div class="glass rv" style="--d:2"><h3>Question</h3><p>Plain English from the user</p></div><div class="arr rv" style="--d:3">&rarr;</div>
+      <div class="glass rv" style="--d:3"><h3>Gemini routes</h3><p>Function calling picks one of 13 functions</p></div><div class="arr rv" style="--d:4">&rarr;</div>
+      <div class="glass calc rv" style="--d:4"><h3>Backend runs</h3><p>Validates parameters, reads real results</p></div><div class="arr rv" style="--d:5">&rarr;</div>
+      <div class="glass rv" style="--d:5"><h3>Verified JSON</h3><p>Only source of truth</p></div><div class="arr rv" style="--d:6">&rarr;</div>
+      <div class="glass rv" style="--d:6"><h3>Gemini explains</h3><p>In simple words</p></div>
+    </div>
+    <div class="split" style="grid-template-columns:1fr 1fr;margin-top:2cqw">
+      <ul class="clean rv" style="--d:7"><li><span class="check">&#10003;</span><p>Key in <b>.env</b>, never committed &middot; current <b>google-genai</b> SDK</p></li><li><span class="check">&#10003;</span><p>Model fallback chain and a cool-down when the API is overloaded</p></li><li><span class="check">&#10003;</span><p>No key or no network: dashboard and verified summaries still work</p></li></ul>
+      <div class="glass quote rv" style="--d:8"><div class="q mono">&ldquo;What is the weather in Tokyo?&rdquo;</div><div class="a">The available dataset cannot answer that question. I can answer questions about the communities, their common interests, similarities, influential users and bridge users.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 EVALUATION -->
+<section class="slide" id="s11" data-title="Model accuracy" data-notes="Louvain is unsupervised and there is no ground truth, so classification accuracy is undefined here and country is not used as a label. We report modularity, stability across ten seeds and agreement with Greedy Modularity; these show consistency, not correctness. The 93 percent target is applied to the AI analyst, where per-answer correctness can be measured against values recomputed from the database. Read the table exactly as it is, including anything marked not run.">
+  <div class="stage">
+    <div class="eyebrow rv">Model accuracy</div>
+    <h2 class="rv" style="--d:1">What &ldquo;accuracy&rdquo; can <span class="grad">honestly mean</span></h2>
+    <div class="cards4">
+      <div class="glass stat rv" style="--d:2"><div class="n">{{modularity}}</div><div class="l">Modularity</div><div class="h">{{mod_range}} over 10 seeds</div></div>
+      <div class="glass stat rv" style="--d:3"><div class="n">{{nmi}}</div><div class="l">Stability NMI</div><div class="h">mean across seed pairs</div></div>
+      <div class="glass stat rv" style="--d:4"><div class="n">{{ari}}</div><div class="l">Stability ARI</div><div class="h">mean across seed pairs</div></div>
+      <div class="glass stat rv" style="--d:5"><div class="n">{{agree}}</div><div class="l">Louvain vs Greedy</div><div class="h">NMI agreement, not accuracy</div></div>
+    </div>
+    <div class="ehead rv" style="--d:6"><span>AI analyst &middot; {{nq}} fixed questions</span><span>Deterministic router</span><span>Gemini live</span></div>
+    <div id="erows"></div>
+    <p class="note rv" style="--d:9;margin-top:1.1cqw">Amber line = target (93%, or at most 7% for unsupported claims). Expected values are recomputed from the database. {{tests}} Louvain has no ground truth, so these numbers measure consistency, not correctness.</p>
+  </div>
+</section>
+
+<!-- 12 DEMO -->
+<section class="slide" id="s12" data-title="Demo" data-notes="Demo script, about four minutes. One: Overview, metrics and insights. Two: Explorer, filter communities, search user 7199, click a node. Three: Profiles, common versus distinctive features. Four: Comparison of communities 2 and 4. Five: Influence, hub versus bridge. Six: AI analyst, ask 'Compare community 2 and community 4' then 'What is the weather in Tokyo?' to show the refusal. Run command: python -m streamlit run app.py.">
+  <div class="stage">
+    <div class="eyebrow rv">Live demo</div>
+    <h2 class="rv" style="--d:1">See it <span class="grad">working</span></h2>
+    <div class="demo">
+      <div class="rv" style="--d:2"><div class="tabs" id="tabs" style="margin:0 0 1.2cqw"></div><div class="win"><div class="bar2"><i></i><i></i><i></i></div><div class="shots" id="shots">{{shots}}</div></div></div>
+      <div class="col rv" style="--d:3"><div class="glass pad"><h3>Suggested path</h3>
+        <ul class="clean script" style="margin-top:1cqw"><li><p><b>1</b>Overview metrics</p></li><li><p><b>2</b>Explorer: search a user</p></li><li><p><b>3</b>Profiles and comparison</p></li><li><p><b>4</b>Influence: hub vs bridge</p></li><li><p><b>5</b>AI analyst: ask, then ask the impossible</p></li></ul></div>
+        <div class="glass pad"><h3>Run anywhere</h3><p class="mono" style="margin-top:.7cqw;font-size:1.25cqw;color:var(--teal)">python -m streamlit run app.py</p><p style="margin-top:.5cqw;font-size:1.25cqw">Windows, macOS and Linux</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 LIMITS -->
+<section class="slide" id="s13" data-title="Limitations" data-notes="Being upfront about limits is part of the scientific value. Each limitation is also documented in docs/limitations.md. Future work: a dataset with real artist names, overlapping communities and the Leiden algorithm, time-aware analysis, and a larger human-rated evaluation of the explanations.">
+  <div class="stage">
+    <div class="eyebrow rv">Honest scope</div>
+    <h2 class="rv" style="--d:1">Limitations and <span class="grad">what comes next</span></h2>
+    <div class="lim">
+      <div class="glass rv" style="--d:2"><h3 style="margin-bottom:1.2cqw">Limitations</h3><ul class="clean"><li><span class="check warn">!</span><p>Artists are anonymous IDs: no names or genres</p></li><li><span class="check warn">!</span><p>No ground-truth communities, so no classification accuracy</p></li><li><span class="check warn">!</span><p>Betweenness is sampled (1,000 sources)</p></li><li><span class="check warn">!</span><p>March 2020 snapshot of Asian users only</p></li><li><span class="check warn">!</span><p>LLM wording depends on an external service</p></li></ul></div>
+      <div class="glass rv" style="--d:3"><h3 style="margin-bottom:1.2cqw">Future work</h3><ul class="clean"><li><span class="check">&rarr;</span><p>A dataset that includes real artist names</p></li><li><span class="check">&rarr;</span><p>Overlapping communities and the Leiden algorithm</p></li><li><span class="check">&rarr;</span><p>Time-aware analysis of how communities change</p></li><li><span class="check">&rarr;</span><p>Larger human-rated evaluation of explanations</p></li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 14 THANKS -->
+<section class="slide" id="s14" data-title="Thank you" data-notes="Close with the four takeaways, then invite questions.">
+  <div class="stage">
+    <div class="eyebrow rv">Conclusion</div>
+    <h2 class="rv" style="--d:1;font-size:5.4cqw">Real data. Real algorithms.<br><span class="grad">Honest explanations.</span></h2>
+    <ul class="clean" style="margin-top:.6cqw">
+      <li class="rv" style="--d:2"><span class="check">&#10003;</span><p>{{users}} users &rarr; {{ncomm}} communities, modularity {{modularity}}</p></li>
+      <li class="rv" style="--d:3"><span class="check">&#10003;</span><p>Interests are measured, similarities are exact, influence is explained</p></li>
+      <li class="rv" style="--d:4"><span class="check">&#10003;</span><p>Gemini explains verified numbers and refuses what the data cannot answer</p></li>
+      <li class="rv" style="--d:5"><span class="check">&#10003;</span><p>One-command install, automatic data, SQLite, tests and documentation</p></li>
+    </ul>
+    <p class="lead rv" style="--d:6;margin-top:1cqw;color:var(--ink)">Thank you &middot; Questions?</p>
+  </div>
+</section>
+
+</div>
+</main>
+
+<div class="chrome" id="chrome" role="navigation" aria-label="Slide controls">
+  <button class="cb" id="prev" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <div class="dots" id="dots"></div>
+  <span class="count" id="count">1 / 14</span>
+  <button class="cb" id="next" aria-label="Next slide"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+  <button class="cb" id="menuBtn" aria-label="Slide overview"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg></button>
+  <button class="cb" id="notesBtn" aria-label="Speaker notes"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg></button>
+  <button class="cb" id="fsBtn" aria-label="Fullscreen"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+</div>
+<aside class="sheet" id="sheet" aria-label="Speaker notes"><h4 id="sheetTitle">Notes</h4><p id="sheetText"></p></aside>
+<div class="menu" id="menu"><div class="grid" id="menuGrid"></div></div>
+
+<script>
+const D = /*__DATA__*/{};
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const PAL = ['#2563EB', '#0F766E', '#B45309', '#475569', '#0369A1', '#15803D', '#BE123C', '#0E7490', '#A16207', '#1D4ED8', '#047857', '#9A3412'];
+const hue = n => { const i = Math.abs(Math.round(n)) - 1; if (i < PAL.length && i >= 0) return PAL[i];              // restrained, no purples
+  const h = ((i * 0.61803398875) % 1) * 0.62 * 360; return `hsl(${Math.round(h)} 58% 40%)`; };
+const pct = (v, d = 1) => (v * 100).toFixed(d) + '%';
+
+/* ================= content built from real data ================= */
+(function build() {
+  const comm = D.communities;
+  const max = Math.max(...comm.map(c => c.n));
+  $('#bars').innerHTML = comm.map((c, i) => `<div class="bar" style="--i:${i};--c:${hue(c.id)};height:${Math.max(c.n / max * 100, .8)}%"><span class="tip">Community ${c.id} &middot; ${c.n.toLocaleString()} members</span></div>`).join('');
+  $('#axis').innerHTML = comm.map(c => `<span>${c.id}</span>`).join('');
+
+  $('#feats').innerHTML = D.features.map((f, i) => `<div class="feat"><span class="nm">feature #${f.id}</span>
+    <div class="track2"><i class="net" style="--w:${f.net * 100}%;--d:${i}"></i><i class="com" style="--w:${f.prev * 100}%;--d:${i}"></i></div>
+    <span class="lf">${f.lift.toFixed(1)}&times;</span></div>`).join('');
+
+  const N = D.cos.length, heat = $('#heat'); heat.style.gridTemplateColumns = `repeat(${N},1fr)`;
+  let cells = '';
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const v = D.cos[r][c], a = r === c ? 1 : v;
+    cells += `<i data-r="${r}" data-c="${c}" style="--d:${r + c};--c:rgba(37,99,235,${(.06 + .94 * a).toFixed(3)})"></i>`; }
+  heat.innerHTML = cells;
+  heat.addEventListener('pointerover', e => { const t = e.target.closest('i'); if (!t) return; const r = +t.dataset.r, c = +t.dataset.c;
+    $('#ro-l').textContent = r === c ? `Community ${D.ids[r]} with itself` : `Community ${D.ids[r]} × community ${D.ids[c]}`;
+    $('#ro-v').textContent = D.cos[r][c].toFixed(3); $('#ro-t').textContent = r === c ? 'Identical profile by definition.' : 'Cosine similarity of TF-IDF interest profiles.'; });
+
+  const reach = (el, n, own) => { const e = $(el); e.innerHTML = Array.from({ length: n }, (_, i) => `<i style="--i:${i};--c:${hue(i + 3 + own)}"></i>`).join(''); };
+  reach('#reach-hub', D.hub.nc, 0); reach('#reach-br', D.br.nc, 5);
+
+  const rows = D.eval.rows;
+  $('#erows').innerHTML = rows.map((r, i) => {
+    const cell = v => v == null ? `<div class="na">Not run (see docs/evaluation.md)</div>` :
+      `<div><div class="pbar"><i style="--w:${Math.min(100, v.pct)}%;--d:${i}"></i><span class="tg" style="left:${r.lower ? 7 : 93}%"></span></div><div class="pv"><span>${v.pct.toFixed(1)}%</span><span>${v.ok ? 'target met' : 'target not met'}</span></div></div>`;
+    return `<div class="erow rv" style="--d:${7 + i * .4}"><div class="m">${r.name}<small>${r.lower ? 'lower is better' : 'higher is better'}</small></div>${cell(r.det)}${cell(r.gem)}</div>`; }).join('');
+
+  const shots = $$('#shots img'), tabs = $('#tabs');
+  tabs.innerHTML = shots.map((im, i) => `<button class="tab${i ? '' : ' on'}" data-i="${i}">${im.alt}</button>`).join('');
+  shots[0] && shots[0].classList.add('on');
+  tabs.addEventListener('click', e => { const b = e.target.closest('.tab'); if (!b) return; $$('.tab', tabs).forEach(t => t.classList.toggle('on', t === b)); shots.forEach((s, i) => s.classList.toggle('on', i === +b.dataset.i)); });
+})();
+
+/* ================= count-up, louvain illustration, title network ================= */
+function countUp(el) { const to = +el.dataset.count; if (reduce) { el.textContent = to.toLocaleString(); return; } const t0 = performance.now(), dur = 1400;
+  (function f(t) { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 4); el.textContent = Math.round(to * e).toLocaleString(); if (k < 1) requestAnimationFrame(f); })(t0); }
+
+const lv = (() => { const svg = $('#lsvg'), NS = 'http://www.w3.org/2000/svg', groups = [[110, 100], [290, 110], [200, 220]], nodes = [], edges = [];
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  groups.forEach((g, gi) => { for (let i = 0; i < 7; i++) { const a = rnd() * 6.28, r = 20 + rnd() * 42; nodes.push({ x: g[0] + Math.cos(a) * r, y: g[1] + Math.sin(a) * r, g: gi }); } });
+  nodes.forEach((a, i) => nodes.forEach((b, j) => { if (j > i && ((a.g === b.g && rnd() < .5) || (a.g !== b.g && rnd() < .02))) edges.push([i, j]); }));
+  svg.innerHTML = edges.map(([i, j]) => `<line x1="${nodes[i].x}" y1="${nodes[i].y}" x2="${nodes[j].x}" y2="${nodes[j].y}" stroke="rgba(15,23,42,.28)" stroke-width="1.2" data-x="${nodes[i].g === nodes[j].g ? 0 : 1}"/>`).join('') +
+    groups.map((g, i) => `<circle class="halo" cx="${g[0]}" cy="${g[1]}" r="0" fill="${hue(i + 1)}" opacity=".14" style="transition:r 1s cubic-bezier(.22,1,.36,1)"/>`).join('') +
+    nodes.map((n, i) => `<circle class="nd" cx="${n.x}" cy="${n.y}" r="6" fill="#94A3B8" style="transition:fill .8s,r .6s"/>`).join('');
+  const nd = $$('.nd', svg), halos = $$('.halo', svg), li = $$('#steps li'); let timers = [];
+  const set = s => { li.forEach((l, i) => l.classList.toggle('act', i === s));
+    nd.forEach((c, i) => { c.setAttribute('fill', s === 0 ? '#94A3B8' : hue(nodes[i].g + 1)); c.setAttribute('r', s >= 2 ? 7 : 6); });
+    halos.forEach(h => h.setAttribute('r', s >= 2 ? 78 : 0)); };
+  return { start() { this.stop(); set(0); [1, 2, 3].forEach((s, k) => timers.push(setTimeout(() => set(s), 1500 * (k + 1)))); }, stop() { timers.forEach(clearTimeout); timers = []; set(0); } }; })();
+
+const net = (() => { const cv = $('#net'), ctx = cv.getContext('2d'); let W, H, dpr, run = false, nodes = [], mx = 0, my = 0, raf;
+  const comm = D.communities.slice(0, 31), seedR = (() => { let s = 11; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+  function init() { dpr = Math.min(devicePixelRatio || 1, 2); W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; nodes = [];
+    comm.forEach((c, i) => { const ang = i * 2.39996, rad = Math.sqrt(i + .6) / Math.sqrt(32) * .56, cx = W * .62 + Math.cos(ang) * rad * W * .62, cy = H * .5 + Math.sin(ang) * rad * H * .98;
+      const k = Math.max(3, Math.round(Math.sqrt(c.n) * .55)); for (let j = 0; j < k; j++) { const a = seedR() * 6.28, r = Math.sqrt(seedR()) * (6 + Math.sqrt(c.n) * .5);
+        nodes.push({ cx, cy, a, r, sp: (.1 + seedR() * .25) * (seedR() < .5 ? -1 : 1), c: i + 1, x: 0, y: 0, z: .4 + seedR() * .6 }); } }); }
+  function frame(t) { if (!run) return; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H); const s = t / 1000;
+    for (const n of nodes) { const a = n.a + s * n.sp * (reduce ? 0 : 1); n.x = n.cx + Math.cos(a) * n.r + mx * 14 * n.z; n.y = n.cy + Math.sin(a) * n.r + my * 14 * n.z; }
+    ctx.lineWidth = .6; for (let i = 0; i < nodes.length; i++) { const a = nodes[i]; for (let j = i + 1; j < Math.min(i + 7, nodes.length); j++) { const b = nodes[j]; if (a.c !== b.c) continue;
+      const d = Math.hypot(a.x - b.x, a.y - b.y); if (d < 46) { ctx.strokeStyle = hue(a.c); ctx.globalAlpha = .22; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.globalAlpha = 1; } } }
+    for (const n of nodes) { ctx.fillStyle = hue(n.c); ctx.globalAlpha = .45 + n.z * .5; ctx.beginPath(); ctx.arc(n.x, n.y, 1.4 + n.z * 1.6, 0, 6.283); ctx.fill(); } ctx.globalAlpha = 1;
+    raf = requestAnimationFrame(frame); }
+  addEventListener('resize', () => nodes.length && init()); addEventListener('pointermove', e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; });
+  return { start() { if (run) return; init(); run = true; raf = requestAnimationFrame(frame); }, stop() { run = false; cancelAnimationFrame(raf); } }; })();
+
+/* ================= deck: spring physics, drag, momentum, rubber-band ================= */
+const deck = $('#deck'), track = $('#track'), slides = $$('.slide'), N = slides.length;
+let W = innerWidth, x = 0, v = 0, target = 0, idx = 0, raf = 0, last = 0, drag = null, springing = false;
+const SPRING = { response: .42, damping: 1 };            // Apple-style parameters: critically damped for navigation
+const stiff = r => Math.pow(2 * Math.PI / r, 2), damp = (r, z) => 4 * Math.PI * z / r;
+const project = (vel, d = .998) => (vel / 1000) * d / (1 - d);       // WWDC momentum projection (vel in px/s)
+const rubber = (o, dim, c = .55) => (o * dim * c) / (dim + c * Math.abs(o));
+const clampIdx = i => Math.max(0, Math.min(N - 1, i));
+
+function render() { track.style.transform = `translate3d(${x}px,0,0)`; $('#progress').style.transform = `scaleX(${Math.min(1, Math.max(0, -x / (W * (N - 1))))})`; $('#glow').style.transform = `translate3d(${x * .04}px,0,0)`; }
+function setActive(i) { if (i === idx && slides[i].classList.contains('on')) return; idx = i;
+  slides.forEach((s, k) => s.classList.toggle('on', k === i)); $$('.dots i').forEach((d, k) => d.classList.toggle('on', k === i));
+  $('#count').textContent = `${i + 1} / ${N}`; $('#prev').disabled = i === 0; $('#next').disabled = i === N - 1;
+  $('#sheetTitle').textContent = `${i + 1}. ${slides[i].dataset.title}`; $('#sheetText').textContent = slides[i].dataset.notes || '';
+  history.replaceState(null, '', '#' + (i + 1)); document.title = `${slides[i].dataset.title} · Social DNA`;
+  i === 0 ? net.start() : net.stop(); i === 4 ? lv.start() : lv.stop();
+  $$('[data-count]', slides[i]).forEach(countUp); }
+
+function step(ts) { const dt = Math.min(.032, (ts - last) / 1000 || .016); last = ts;
+  const k = stiff(SPRING.response), c = damp(SPRING.response, SPRING.damping), tx = -target * W;
+  for (let s = 0; s < 4; s++) { const h = dt / 4, a = k * (tx - x) - c * v; v += a * h; x += v * h; }
+  render(); if (Math.abs(tx - x) < .3 && Math.abs(v) < 4) { x = tx; v = 0; springing = false; render(); return; } raf = requestAnimationFrame(step); }
+function goTo(i, vel = 0) { target = clampIdx(i); setActive(target); if (reduce) { x = -target * W; v = 0; render(); return; }
+  v = vel; if (!springing) { springing = true; last = performance.now(); raf = requestAnimationFrame(step); } }   // always starts from the live x and v: interruptible
+
+/* pointer drag: 1:1 tracking, velocity history, momentum projection, rubber-banding at the ends */
+deck.addEventListener('pointerdown', e => { if (e.button || e.target.closest('button,a,.tab,.heat,.bar,.sheet,.menu')) return;
+  drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, xs: x, hist: [{ t: performance.now(), x: e.clientX }], on: false }; });
+addEventListener('pointermove', e => { if (!drag || e.pointerId !== drag.id) return; const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+  if (!drag.on) { if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; if (Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
+    drag.on = true; springing = false; cancelAnimationFrame(raf); deck.setPointerCapture(e.pointerId); deck.classList.add('drag'); drag.x0 = e.clientX; drag.xs = x; }
+  const rawX = drag.xs + (e.clientX - drag.x0), min = -(N - 1) * W; let nx = rawX;
+  if (rawX > 0) nx = rubber(rawX, W); else if (rawX < min) nx = min - rubber(min - rawX, W);        // soft boundary
+  x = nx; render(); const now = performance.now(); drag.hist.push({ t: now, x: e.clientX }); drag.hist = drag.hist.filter(h => now - h.t < 100); });
+function endDrag(e) { if (!drag || e.pointerId !== drag.id) return; const d = drag; drag = null; deck.classList.remove('drag'); if (!d.on) return;
+  const h = d.hist, vel = h.length > 1 ? (h[h.length - 1].x - h[0].x) / ((h[h.length - 1].t - h[0].t) / 1000) : 0;          // px/s
+  const projected = x + project(vel); const i = clampIdx(Math.round(-projected / W));                                         // land where the flick is heading
+  const cur = Math.round(-d.xs / W), final = (Math.abs(vel) < 80 && Math.abs(x - d.xs) < W * .2) ? cur : i;
+  goTo(final, vel); }
+addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
+
+/* keyboard, wheel, buttons, hash */
+addEventListener('keydown', e => { if (e.metaKey || e.ctrlKey || e.altKey) return; const k = e.key;
+  if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(k) && !(k === ' ' && e.shiftKey)) { e.preventDefault(); goTo(target + 1); }
+  else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(k) || (k === ' ' && e.shiftKey)) { e.preventDefault(); goTo(target - 1); }
+  else if (k === 'Home') goTo(0); else if (k === 'End') goTo(N - 1);
+  else if (k === 's' || k === 'S') toggleSheet(); else if (k === 'o' || k === 'O') toggleMenu(); else if (k === 'f' || k === 'F') fs();
+  else if (k === 'Escape') { $('#sheet').classList.remove('open'); $('#menu').classList.remove('open'); } else if (/^[1-9]$/.test(k)) goTo(+k - 1); });
+let wheelLock = 0; addEventListener('wheel', e => { const now = performance.now(); if (now < wheelLock || e.target.closest('.sheet,.menu') || Math.abs(e.deltaX) + Math.abs(e.deltaY) < 24) return;
+  wheelLock = now + 650; goTo(target + ((Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) > 0 ? 1 : -1)); }, { passive: true });
+$('#prev').onclick = () => goTo(target - 1); $('#next').onclick = () => goTo(target + 1);
+const toggleSheet = () => $('#sheet').classList.toggle('open'), toggleMenu = () => $('#menu').classList.toggle('open');
+const fs = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+$('#notesBtn').onclick = toggleSheet; $('#menuBtn').onclick = toggleMenu; $('#fsBtn').onclick = fs;
+$('#dots').innerHTML = slides.map((_, i) => `<i data-i="${i}" title="${slides[i].dataset.title}"></i>`).join(''); $('#dots').onclick = e => { const d = e.target.closest('i'); d && goTo(+d.dataset.i); };
+$('#menuGrid').innerHTML = slides.map((s, i) => `<button style="--i:${i}" data-i="${i}"><small>${String(i + 1).padStart(2, '0')}</small><span>${s.dataset.title}</span></button>`).join('');
+$('#menu').onclick = e => { const b = e.target.closest('button'); if (b) goTo(+b.dataset.i); $('#menu').classList.remove('open'); };
+addEventListener('resize', () => { W = innerWidth; x = -target * W; v = 0; render(); });
+
+/* chrome fades away when idle, returns on any movement */
+let idle; const wake = () => { $('#chrome').classList.remove('idle'); clearTimeout(idle); idle = setTimeout(() => !$('#sheet').classList.contains('open') && $('#chrome').classList.add('idle'), 3200); };
+['pointermove', 'keydown', 'pointerdown'].forEach(ev => addEventListener(ev, wake)); wake();
+
+const start = clampIdx((parseInt(location.hash.slice(1)) || 1) - 1); x = -start * W; target = start; render(); setActive(start);
+</script>
+</body>
+</html>

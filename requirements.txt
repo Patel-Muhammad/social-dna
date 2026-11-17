@@ -1,0 +1,15 @@
+# Supported: Python 3.10, 3.11 or 3.12 (developed and tested on 3.12).
+# Ranges allow compatible newer releases; requirements-lock.txt holds the exact versions that were tested.
+streamlit>=1.40,<2
+networkx>=3.2,<4
+python-louvain>=0.16,<0.17
+pandas>=2.1,<3
+numpy>=1.26,<3
+scipy>=1.11,<2
+scikit-learn>=1.4,<2
+plotly>=5.20,<8
+pyvis>=0.3.2,<0.4
+google-genai>=1.0,<5
+python-dotenv>=1.0,<2
+requests>=2.31,<3
+pytest>=8.0,<10

@@ -1,0 +1,4 @@
+# Only needed to rebuild screenshots (scripts/capture_screenshots.py). Not needed to run the app,
+# the tests, or to rebuild the HTML presentation (scripts/build_presentation.py needs only Pillow, installed with Streamlit).
+-r requirements.txt
+playwright>=1.45,<2
